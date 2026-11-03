@@ -1,25 +1,125 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function admin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function roleIs(role) {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    function validBookingStatus(status) {
+      return status in [
+        'pending',
+        'accepted',
+        'driver_on_way',
+        'arrived',
+        'patient_picked',
+        'going_to_hospital',
+        'completed',
+        'cancelled',
+        'rejected'
+      ];
+    }
+
+    function validDriverTransition(previous, next) {
+      return (previous == 'accepted' && next == 'driver_on_way')
+        || (previous == 'driver_on_way' && next == 'arrived')
+        || (previous == 'arrived' && next == 'patient_picked')
+        || (previous == 'patient_picked' && next == 'going_to_hospital')
+        || (previous == 'going_to_hospital' && next == 'completed');
+    }
+
     match /users/{userId} {
-      allow read: if request.auth != null;
-      allow create, update: if request.auth != null && request.auth.uid == userId;
-      allow delete: if false;
+      allow read: if signedIn() && (request.auth.uid == userId || admin());
+      allow create: if signedIn()
+        && request.auth.uid == userId
+        && request.resource.data.role in ['patient', 'driver'];
+      allow update: if admin()
+        || (signedIn()
+          && request.auth.uid == userId
+          && request.resource.data.role == resource.data.role
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['name', 'phone', 'address', 'ambulanceType', 'age']));
+      allow delete: if admin();
+
+      match /devices/{deviceId} {
+        allow read, write: if signedIn()
+          && (request.auth.uid == userId || admin());
+      }
     }
 
     match /bookings/{bookingId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null;
+      allow read: if admin()
+        || (signedIn() && resource.data.userId == request.auth.uid)
+        || (signedIn() && resource.data.driverId == request.auth.uid)
+        || (roleIs('driver') && resource.data.status == 'pending');
+
+      allow create: if roleIs('patient')
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && validBookingStatus(request.resource.data.status);
+
+      allow update: if admin()
+        || (roleIs('patient')
+          && resource.data.userId == request.auth.uid
+          && resource.data.status in [
+            'pending',
+            'accepted',
+            'driver_on_way',
+            'arrived',
+            'patient_picked',
+            'going_to_hospital'
+          ]
+          && request.resource.data.status == 'cancelled'
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'etaMinutes']))
+        || (roleIs('driver')
+          && resource.data.status == 'pending'
+          && request.resource.data.driverId == request.auth.uid
+          && request.resource.data.status in ['accepted', 'rejected']
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['driverId', 'driverName', 'driverPhone', 'status', 'etaMinutes']))
+        || (roleIs('driver')
+          && resource.data.driverId == request.auth.uid
+          && validDriverTransition(
+            resource.data.status,
+            request.resource.data.status
+          )
+          && validBookingStatus(request.resource.data.status)
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'etaMinutes', 'driverLatitude', 'driverLongitude']));
+      allow delete: if admin();
+    }
+
+    match /ambulances/{ambulanceId} {
+      allow read: if signedIn();
+      allow create, delete: if admin();
+      allow update: if admin()
+        || (roleIs('driver')
+          && resource.data.driverId == request.auth.uid
+          && request.resource.data.driverId == resource.data.driverId
+          && request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['status', 'currentLocation', 'driverName']));
     }
 
     match /hospitals/{hospitalId} {
       allow read: if true;
-      allow write: if false;
+      allow write: if admin();
     }
 
     match /notifications/{notificationId} {
-      allow read, write: if request.auth != null;
+      allow read, update: if admin()
+        || (signedIn() && resource.data.userId == request.auth.uid);
+      allow create: if admin()
+        || (signedIn() && request.resource.data.userId == request.auth.uid);
+      allow delete: if admin();
     }
   }
 }

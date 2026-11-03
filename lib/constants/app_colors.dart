@@ -11,4 +11,5 @@ class AppColors {
   static const Color warningOrange = Color(0xFFF59E0B);
   static const Color infoBlue = Color(0xFF3B82F6);
   static const Color divider = Color(0xFFE2E8F0);
+  static const Color border = divider;
 }

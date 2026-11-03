@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import 'dart:async';
 
 class LocationService {
   static Future<Position?> getCurrentPosition() async {
@@ -12,6 +13,15 @@ class LocationService {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
         return null;
+      }
+
+      static Stream<Position> positionStream() {
+        return Geolocator.getPositionStream(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 20,
+          ),
+        );
       }
     }
 

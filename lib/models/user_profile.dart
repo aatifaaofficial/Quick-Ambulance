@@ -9,6 +9,7 @@ class UserProfile {
   final String password;
   final UserRole role;
   final String? ambulanceType;
+  final int? age;
 
   const UserProfile({
     required this.id,
@@ -19,7 +20,28 @@ class UserProfile {
     required this.password,
     required this.role,
     this.ambulanceType,
+    this.age,
   });
+
+  factory UserProfile.fromMap(Map<String, dynamic> data, {required String id}) {
+    final roleName = data['role'] as String?;
+    final role = UserRole.values.where((value) => value.name == roleName);
+    if (role.isEmpty) {
+      throw FormatException('Unknown user role: $roleName');
+    }
+
+    return UserProfile(
+      id: id,
+      name: data['name'] as String? ?? '',
+      email: data['email'] as String? ?? '',
+      phone: data['phone'] as String? ?? '',
+      address: data['address'] as String? ?? '',
+      password: '',
+      role: role.first,
+      ambulanceType: data['ambulanceType'] as String?,
+      age: (data['age'] as num?)?.toInt(),
+    );
+  }
 
   String get roleLabel {
     switch (role) {
@@ -35,25 +57,26 @@ class UserProfile {
   static UserProfile demoPatient() {
     return const UserProfile(
       id: 'p001',
-      name: 'Aisha Rahman',
+      name: 'Aatifaa Jyoti',
       email: 'patient@example.com',
-      phone: '+8801700000000',
-      address: 'Dhaka Medical Road, Dhaka',
+      phone: '01602381861',
+      address: 'Uttara Sector 7, Dhaka',
       password: '123456',
       role: UserRole.patient,
+      age: 22,
     );
   }
 
   static UserProfile demoDriver() {
     return const UserProfile(
       id: 'd001',
-      name: 'Rahim Uddin',
+      name: 'Rahim Ahmed',
       email: 'driver@example.com',
       phone: '+8801711111111',
       address: 'Uttara, Dhaka',
       password: '123456',
       role: UserRole.driver,
-      ambulanceType: 'ICU',
+      ambulanceType: 'Basic Life Support',
     );
   }
 

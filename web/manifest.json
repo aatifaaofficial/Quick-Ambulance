@@ -1,11 +1,11 @@
 {
-    "name": "quick_ambulance",
-    "short_name": "quick_ambulance",
+    "name": "Quick Ambulance",
+    "short_name": "Quick Ambulance",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FFFFFF",
+    "theme_color": "#EF4444",
+    "description": "Emergency ambulance booking and dispatch.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
