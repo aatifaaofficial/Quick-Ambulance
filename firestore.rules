@@ -88,13 +88,21 @@ service cloud.firestore {
             .hasOnly(['driverId', 'driverName', 'driverPhone', 'status', 'etaMinutes']))
         || (roleIs('driver')
           && resource.data.driverId == request.auth.uid
-          && validDriverTransition(
-            resource.data.status,
-            request.resource.data.status
-          )
+          && (request.resource.data.status == resource.data.status
+            || validDriverTransition(
+              resource.data.status,
+              request.resource.data.status
+            ))
           && validBookingStatus(request.resource.data.status)
           && request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['status', 'etaMinutes', 'driverLatitude', 'driverLongitude']));
+            .hasOnly([
+              'status',
+              'etaMinutes',
+              'driverLatitude',
+              'driverLongitude',
+              'driverName',
+              'driverPhone'
+            ]));
       allow delete: if admin();
     }
 
