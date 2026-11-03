@@ -127,7 +127,8 @@ class DriverOverviewPage extends StatelessWidget {
                     ),
                     trailing: Switch(
                       value: ambulance.status == AmbulanceStatus.available,
-                      onChanged: ambulance.status == AmbulanceStatus.busy
+                      onChanged: ambulance.status == AmbulanceStatus.busy &&
+                              appState.driverActiveBookings.isNotEmpty
                           ? null
                           : (_) => appState.toggleCurrentDriverAvailability(),
                     ),

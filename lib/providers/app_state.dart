@@ -931,7 +931,8 @@ class AppState extends ChangeNotifier {
       notifyListeners();
       return;
     }
-    if (current.status == AmbulanceStatus.busy) {
+    if (current.status == AmbulanceStatus.busy &&
+        (user.role != UserRole.driver || driverActiveBookings.isNotEmpty)) {
       _errorMessage = 'Finish the active trip before changing ambulance availability.';
       notifyListeners();
       return;
